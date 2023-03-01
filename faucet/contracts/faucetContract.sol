@@ -1,7 +1,9 @@
-pragma solidity >=0.4.22 <0.9.0;
+pragma solidity >=0.8.0 <0.9.0;
 
 contract Faucet {
-    uint public funds = 1000; // only positive values
-    int public counter = -10;
-    uint32 public test = 4294967295;
+    // this function is called when no function name is specified in the call
+    // external functions can only be called by other contracts and other txs
+    receive() external payable { // payable tell this function will receive tokens
+
+    }
 }
