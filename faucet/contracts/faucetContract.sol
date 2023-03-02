@@ -6,4 +6,7 @@ contract Faucet {
     receive() external payable { // payable tell this function will receive tokens
 
     }
+    function addFunds() external payable {
+        
+    }
 }
