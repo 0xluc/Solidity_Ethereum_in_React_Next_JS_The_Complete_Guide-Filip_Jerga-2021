@@ -45,7 +45,7 @@ contract Faucet {
     function withdrawAllFundsToAddress(address _address) external onlyAdmin() {
         payable(_address).transfer(address(this).balance);
     }
-    function withdraw(uint amount) external {
+    function withdraw(uint amount) external onlyAdmin(){
         require(amount <= address(this).balance, "Not enough eth in the contract");
         payable(msg.sender).transfer(amount);
     }
