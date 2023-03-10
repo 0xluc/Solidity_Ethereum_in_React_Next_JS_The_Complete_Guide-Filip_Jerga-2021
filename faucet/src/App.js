@@ -11,6 +11,7 @@ import { Toast } from 'primereact/toast';
 function App() {
   const [web3Api, setWeb3Api] = useState({
     provider: null,
+    isProviderLoaded: false,
     web3: null,
     contract: null,
   });
@@ -20,10 +21,12 @@ function App() {
   const [account, setAccounts] = useState(null);
   const [shouldReload, reload] = useState(false);
 
+  const canConnectToContract = account && web3Api.contract  
   const reloadEffect = useCallback(() => reload(!shouldReload),[shouldReload])
 
   const setAccountListener = provider => {
     provider.on("accountsChanged", accounts => setAccounts(accounts[0]))
+    provider.on("chainChanged", _ => window.location.reload())
   }
 
   const toast = useRef(null);
@@ -31,16 +34,23 @@ function App() {
   useEffect(() => {
     const loadProvider = async () => {
       const provider = await detectEthereumProvider();
-      const contract = await loadContract("Faucet", provider);
       if (provider) {
+        const contract = await loadContract("Faucet", provider);
         //await provider.request({ method: "eth_requestAccounts" })
         setAccountListener(provider)
         setWeb3Api({
           web3: new Web3(provider),
           provider,
           contract,
+          isProviderLoaded: true
         });
       } else {
+        // setWeb3Api({...web3Api, isProviderLoaded:true})
+        setWeb3Api(api => ({
+            ...api,
+            isProviderLoaded:true
+          }
+        ))
         console.error("Please install metamask");
       }
 
@@ -107,30 +117,45 @@ function App() {
         toast.current.show({severity:'error',  detail:'Somente o deployer pode fazer o saque :P', life: 3000});
     }
 
-  return (
-    
-    <div className="faucet-wrapper">
+
+    return (
+      
+      <div className="faucet-wrapper">
       <div className="faucet">
+        { web3Api.isProviderLoaded ?
         <div className="is-flex is-align-items-center">
           <span>
-            <strong className="mr-2">Account:</strong>
+            <strong className="mr-2">Endereço:</strong>
           </span>
-          {account ? (
-            <div>{account}</div>
-          ) : (
+          {account ? 
+            <div>{account}</div> 
+           : !web3Api.provider ?
+            <div className="notification is-warning is-size-6 is-rounded">
+              Carteira não detectada!
+              <a rel="noreferrer" target="_blank" href="https://docs.metamask.io">
+                Instale a Metamask
+              </a>
+
+            </div> :
+
             <button
               onClick={() =>
                 web3Api.provider.request({ method: "eth_requestAccounts" })
               }
               className="button is-info is-small"
             >
-              Connect Wallet
+              Conectar carteira
             </button>
-          )}
-        </div>
+          }
+        </div> :
+        <span>Looking for web3...</span>
+        }
         <div className="balance-view is-size-2 my-4">
-          Current Balance: <strong>{balance}</strong>AVAX
+          Saldo no contrato: <strong>{balance}</strong>AVAX
         </div>
+        { !canConnectToContract && <i className="is-block">Conecte-se a rede Avax Fuji Testnet</i>
+
+        }
         {/* <button
           className="btn mr-2"
           onClick={async () => {
@@ -143,8 +168,8 @@ function App() {
           Enable ethereum
         </button> */}
         <InputNumber value={amount} style={{'marginRight': '10px'}} onValueChange={(e) => setValue3(e.value)} minFractionDigits={0} maxFractionDigits={8} />
-        <button className="button is-primary is-light mr-2" onClick={addFunds}>Donate </button>
-        <button className="button is-danger is-light" onClick={withdrawFunds}>Withdraw</button>
+        <button disabled={!canConnectToContract} className="button is-primary is-light mr-2" onClick={addFunds}>Doar </button>
+        <button disabled={!canConnectToContract} className="button is-danger is-light" onClick={withdrawFunds}>Sacar</button>
         <Toast ref={toast}></Toast>
       </div>
     </div>
