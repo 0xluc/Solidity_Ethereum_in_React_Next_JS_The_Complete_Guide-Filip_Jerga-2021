@@ -33,8 +33,9 @@ function App() {
 
   useEffect(() => {
     const loadProvider = async () => {
+      const chainId = "43113"
       const provider = await detectEthereumProvider();
-      if (provider) {
+      if (provider && window.ethereum.networkVersion === chainId) {
         const contract = await loadContract("Faucet", provider);
         //await provider.request({ method: "eth_requestAccounts" })
         setAccountListener(provider)
@@ -44,7 +45,34 @@ function App() {
           contract,
           isProviderLoaded: true
         });
-      } else {
+      } 
+      else if (provider && window.ethereum.networkVersion !== chainId){
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: Web3.utils.toHex(chainId) }]
+          }).then(() =>{
+            loadProvider()
+          })
+        } catch (err) {
+          // This error code indicates that the chain has not been added to MetaMask
+            if (err.code === 4902) {
+
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [
+                  {
+                    chainName: 'Avalanche Testnet',
+                    chainId: Web3.utils.toHex(chainId),
+                    nativeCurrency: { name: 'AVAX', decimals: 18, symbol: 'AVAX' },
+                    rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc']
+                  }
+                ]
+              });
+          }
+        }
+      }
+      else {
         // setWeb3Api({...web3Api, isProviderLoaded:true})
         setWeb3Api(api => ({
             ...api,
